@@ -6,6 +6,8 @@ import { DishService } from '../services/dish.service';
 import { switchMap } from 'rxjs/operators';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSlider } from '@angular/material';
+import { visibility } from '../animations/app.animation';
+import { flyInOut, expand } from '../animations/app.animation';
 
 
 
@@ -14,7 +16,17 @@ import { MatSlider } from '@angular/material';
 @Component({
   selector: 'app-dishdetail',
   templateUrl: './dishdetail.component.html',
-  styleUrls: ['./dishdetail.component.scss']
+  styleUrls: ['./dishdetail.component.scss'],
+   // tslint:disable-next-line:use-host-property-decorator
+   host: {
+    '[@flyInOut]': 'true',
+    'style': 'display: block;'
+    },
+    animations: [
+      flyInOut(),
+      visibility(),
+      expand()
+    ]
 })
 
 export class DishdetailComponent implements OnInit {
@@ -27,6 +39,7 @@ export class DishdetailComponent implements OnInit {
   next: string;
   dishErrMess: string;
   dishcopy: Dish;
+  visibility= 'shown';
 
   commentForm : FormGroup;
 
@@ -56,9 +69,9 @@ export class DishdetailComponent implements OnInit {
       this.createForm();
       this.dishservice.getDishIds().subscribe(dishIds => this.dishIds = dishIds,
         disherrmess => this.dishErrMess = <any>disherrmess);
-      this.route.params.pipe(switchMap((params: Params) => this.dishservice.getDish(params['id'])))
-      .subscribe(dish => { this.dish = dish; this.dishcopy = dish; this.setPrevNext(dish.id); },
-      disherrmess => this.dishErrMess = <any>disherrmess);
+        this.route.params.pipe(switchMap((params: Params) => { this.visibility = 'hidden'; return this.dishservice.getDish(+params['id']); }))
+        .subscribe(dish => { this.dish = dish; this.dishcopy = dish; this.setPrevNext(dish.id); this.visibility = 'shown'; },
+          disherrmess => this.dishErrMess = <any>disherrmess);
     }
 
   goBack(): void {

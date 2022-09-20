@@ -1,11 +1,22 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { flyInOut, expand } from '../animations/app.animation';
+import { FeedbackService } from '../services/feedback.service';
 import { Feedback, ContactType } from '../shared/feedback';
 
 @Component({
   selector: 'app-contact',
   templateUrl: './contact.component.html',
-  styleUrls: ['./contact.component.scss']
+  styleUrls: ['./contact.component.scss'],
+   // tslint:disable-next-line:use-host-property-decorator
+   host: {
+    '[@flyInOut]': 'true',
+    'style': 'display: block;'
+    },
+    animations: [
+      flyInOut(),
+      expand()
+    ]
 })
 export class ContactComponent implements OnInit {
 
@@ -14,6 +25,10 @@ export class ContactComponent implements OnInit {
   feedbackForm : FormGroup;
   feedback : Feedback;
   contactType = ContactType;
+  feedbackCopy : Feedback;
+  feedbackErrMess : string;
+  public divForm: boolean;
+  public spin: boolean; 
 
   formErrors = {
     'firstname': '',
@@ -45,11 +60,14 @@ export class ContactComponent implements OnInit {
   
   
 
-  constructor(private fb : FormBuilder) {
-    this.createForm();
-   }
+  constructor(private fb : FormBuilder,
+    private feedbackservice : FeedbackService,
+    @Inject('BaseURL') private BaseURL) {}
 
   ngOnInit() {
+    this.createForm();
+    this.divForm = false;
+    this.spin = true;
   }
 
   createForm(){
@@ -70,18 +88,25 @@ export class ContactComponent implements OnInit {
   }
 
   onSubmit(){
-    this.feedback = this.feedbackForm.value;
-    console.log(this.feedback);
-    this.feedbackForm.reset({
-      firstname: '',
-      lastname: '',
-      telnum: '',
-      email: '',
-      agree: false,
-      contacttype: 'None',
-      message: ''
-    });
-    this.feedbackFormDirective.resetForm();
+    this.divForm = true;
+    this.spin = false;
+    this.feedbackCopy = this.feedbackForm.value;
+    console.log(this.feedbackCopy);
+    this.feedbackservice.submitFeedback(this.feedbackCopy)
+      .subscribe(feedback => {
+        this.feedback = feedback; this.feedbackCopy = null; this.divForm = false; this.spin = true;
+      },feedbackerrmess => { this.feedback = null; this.feedbackErrMess = <any>feedbackerrmess});
+      setTimeout(()=> this.feedback = null, 5000);
+      this.feedbackFormDirective.resetForm();
+      this.feedbackForm.reset({
+        firstname: '',
+        lastname: '',
+        telnum: '',
+        email: '',
+        agree: false,
+        contacttype: 'None',
+        message: ''
+      });
   }
   onValueChanged(data?: any) {
     if (!this.feedbackForm) { return; }
